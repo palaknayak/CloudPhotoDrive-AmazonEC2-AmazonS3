@@ -4,6 +4,7 @@ import os
 from flask import Flask, jsonify, request, make_response
 from cloudant import Cloudant
 import hashlib
+import datetime
 
 app = Flask(__name__)
 USERNAME = "e92c4fcd-5b2d-4adf-a1a6-4c2b9ff6b17b-bluemix"
@@ -35,14 +36,16 @@ def upload():
 		if (document['file_name'] == file_name):  #check if there is a file with same name?
 			flag = True
 			if(document['hashed_content']==file_content_hashed):  #if yes, the check the content us same?
-				response = response+"<h3>The File with the same content is already present</h3>"
+				response = response+"<h3>The File with the same content is already present</h3><form action='../'><input type='Submit' value='Back to Home Page'></form>"
 			else:
 				version = document['version']+1
-				data1 = {'file_name': file_name,'data': file_content,'hashed_content':file_content_hashed, 'version':version}
+				timestamp = str(datetime.datetime.now())
+				data1 = {'file_name': file_name,'data': file_content,'hashed_content':file_content_hashed, 'version':version, 'timestamp':timestamp}
 				doc = my_database.create_document(data1)
 				response = response+"<h1>File has been uploaded on Cloudant.</h1><form action='../'><input type='Submit' value='Back to Home Page'></form>"
 	if flag==False: #if flag is flase, there is no file wih same name. Store a new file on cloudant with version=1
-		data1 = {'file_name': file_name,'data': file_content,'hashed_content':file_content_hashed,'version':1}
+		timestamp = str(datetime.datetime.now())
+		data1 = {'file_name': file_name,'data': file_content,'hashed_content':file_content_hashed,'version':1,'timestamp':timestamp}
 		doc = my_database.create_document(data1)
 		response = response+"<h1>File has been uploaded on Cloudant.</h1><form action='../'><input type='Submit' value='Back to Home Page'></form>"
 	return response
@@ -52,30 +55,34 @@ def upload():
 @app.route('/download', methods=['POST'])
 def download():
 	file_name = request.form['filename']
+	file_version = request.form['fileversion']
 	for document in my_database:
-		if (document['file_name'] == file_name):
+		if (document['file_name'] == file_name and document['version'] == int(file_version)):
 			dt = document['data']
 			f= open(file_name,"w+")
 			f.write(dt)  #file will be downloaded in the current local directory
-			response = "<h3>The requested file has been downloaded</h3>"
+			response = "<h3>The requested file has been downloaded</h3><form action='../'><input type='Submit' value='Back to Home Page'></form>"
 		else:
-			response = "<h3>File not Found</h3>"
+			response = "<h3>File not Found</h3><form action='../'><input type='Submit' value='Back to Home Page'></form>"
 	return response
 
 @app.route('/list_files', methods=['POST'])
 def list():
 	file_list="<html><body><h1>The Files on Cloudants are:</h1><h4>"
 	for document in my_database:
-		file_list=file_list+document['file_name']+"</br>"
-	file_list=file_list+"</h4></body></html>"
+		file_list=file_list+"File Name: "+document['file_name']+" "+"Version: "+str(document['version'])+" "+"Last Updated: "+document['timestamp']+"</br>"
+	file_list=file_list+"</h4><form action='../'><input type='Submit' value='Back to Home Page'></form></body></html>"
 	return file_list
 		
 
 @app.route('/delete', methods=['POST'])
 def delete():
 	file_name = request.form['filename']
+	file_version = request.form['fileversion']
+	print '------------------>>>>>>>>>>>>>>>>'
+	print file_version
 	for document in my_database:
-		if document['file_name'] == file_name:
+		if (document['file_name'] == file_name and document['version'] == int(file_version)):
 			print("File found and deleted")
 			document.delete()
 			#document.delete_attachment(file_name)
