@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 
 access_key = 'AKIAICSMVZYTW2JCYCJA'
-secret_key = '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'
+secret_key = 'XYZ'
 
 s3 = boto3.client('s3')
 #s3 = boto3.resource('s3')
